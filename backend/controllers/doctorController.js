@@ -216,14 +216,17 @@ export const getDoctor = async (req, res) => {
   }
 };
 
+// ✅ FIXED: updateDoctorProfile function with proper User model reference
 export const updateDoctorProfile = async (req, res) => {
   try {
     let doctor = await Doctor.findOne({ user: req.user.id });
-    const user = await User.findById(req.user.id); 
-
+    
     if (!doctor) {
       return ApiResponse.error(res, 'Doctor profile not found', 404);
     }
+
+    // ✅ Get the user document for avatar handling
+    const user = await User.findById(req.user.id);
 
     const allowedFields = [
       'specialization', 'qualification', 'experience', 'bio',
@@ -237,9 +240,11 @@ export const updateDoctorProfile = async (req, res) => {
       }
     });
 
+    // Handle avatar upload
     if (req.file) {
+      // ✅ FIXED: Using user.avatar instead of doctor.user.avatar
       if (user.avatar?.public_id) {
-        await cloudinary.uploader.destroy(doctor.user.avatar.public_id);
+        await cloudinary.uploader.destroy(user.avatar.public_id);
       }
 
       const result = await cloudinary.uploader.upload(req.file.path, {
@@ -249,16 +254,17 @@ export const updateDoctorProfile = async (req, res) => {
         crop: 'fill'
       });
 
-      await User.findByIdAndUpdate(req.user.id, {
-        avatar: {
-          public_id: result.public_id,
-          url: result.secure_url
-        }
-      });
+      // ✅ Update the User model's avatar
+      user.avatar = {
+        public_id: result.public_id,
+        url: result.secure_url
+      };
+      await user.save();
     }
 
     await doctor.save();
 
+    // Update user fields (name, phone, address)
     const userFields = ['name', 'phone', 'address'];
     const userUpdate = {};
     userFields.forEach(field => {
@@ -323,10 +329,11 @@ export const getDoctorDashboard = async (req, res) => {
     const recentPatients = await Appointment.distinct('patient', {
       doctor: doctor._id,
       status: 'completed'
-    }).slice(-5);
+    });
 
+    const recentPatientIds = recentPatients.slice(-5);
     const patientDetails = await User.find({
-      _id: { $in: recentPatients }
+      _id: { $in: recentPatientIds }
     }).select('name email phone avatar');
 
     const appointmentStats = await Appointment.aggregate([

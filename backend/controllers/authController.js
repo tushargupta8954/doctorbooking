@@ -2,17 +2,10 @@ import User from '../models/User.js';
 import Doctor from '../models/Doctor.js';
 import jwt from 'jsonwebtoken';
 
+// ✅ FIXED: Removed undefined JWT_COOKIE_EXPIRE reference
 const sendTokenResponse = (user, statusCode, res) => {
   const token = user.getSignedJwtToken();
   const refreshToken = user.getRefreshToken();
-
-  const options = {
-    expires: new Date(
-      Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
-    ),
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production'
-  };
 
   res.status(statusCode).json({
     success: true,
@@ -112,7 +105,7 @@ export const getMe = async (req, res) => {
 
     let profile = user;
     if (user.role === 'doctor') {
-      profile = await Doctor.findOne({ user: user._id }).populate('user');
+      profile = await Doctor.findOne({ user: user._id }).populate('user', '-password');
     }
 
     res.status(200).json({
@@ -129,6 +122,9 @@ export const getMe = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
+    // If using refresh tokens in database, you can invalidate them here
+    // await User.findByIdAndUpdate(req.user.id, { refreshToken: null });
+    
     res.status(200).json({
       success: true,
       message: 'Logged out successfully'
