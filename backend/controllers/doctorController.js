@@ -219,6 +219,7 @@ export const getDoctor = async (req, res) => {
 export const updateDoctorProfile = async (req, res) => {
   try {
     let doctor = await Doctor.findOne({ user: req.user.id });
+    const user = await User.findById(req.user.id); 
 
     if (!doctor) {
       return ApiResponse.error(res, 'Doctor profile not found', 404);
@@ -237,7 +238,7 @@ export const updateDoctorProfile = async (req, res) => {
     });
 
     if (req.file) {
-      if (doctor.user.avatar?.public_id) {
+      if (user.avatar?.public_id) {
         await cloudinary.uploader.destroy(doctor.user.avatar.public_id);
       }
 
