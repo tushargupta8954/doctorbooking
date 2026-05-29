@@ -2,13 +2,25 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import ApiResponse from './apiResponse.js';
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET
-});
+// ✅ Don't initialize immediately - create a function to get instance
+let razorpayInstance = null;
+
+const getRazorpayInstance = () => {
+  if (!razorpayInstance) {
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      throw new Error('Razorpay credentials are not configured');
+    }
+    razorpayInstance = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET
+    });
+  }
+  return razorpayInstance;
+};
 
 export const createPaymentOrder = async (amount) => {
   try {
+    const razorpay = getRazorpayInstance();
     const options = {
       amount: amount.toString(),
       currency: 'INR',
@@ -45,6 +57,7 @@ export const verifyPayment = async (req, res) => {
 
 export const getPaymentDetails = async (paymentId) => {
   try {
+    const razorpay = getRazorpayInstance();
     const payment = await razorpay.payments.fetch(paymentId);
     return payment;
   } catch (error) {
@@ -54,6 +67,7 @@ export const getPaymentDetails = async (paymentId) => {
 
 export const processRefund = async (paymentId, amount) => {
   try {
+    const razorpay = getRazorpayInstance();
     const refund = await razorpay.payments.refund(paymentId, {
       amount: amount.toString()
     });

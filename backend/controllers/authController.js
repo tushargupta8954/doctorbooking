@@ -2,7 +2,6 @@ import User from '../models/User.js';
 import Doctor from '../models/Doctor.js';
 import jwt from 'jsonwebtoken';
 
-// ✅ FIXED: Removed undefined JWT_COOKIE_EXPIRE reference
 const sendTokenResponse = (user, statusCode, res) => {
   const token = user.getSignedJwtToken();
   const refreshToken = user.getRefreshToken();
@@ -20,6 +19,7 @@ const sendTokenResponse = (user, statusCode, res) => {
   });
 };
 
+// ✅ Use ONLY named exports (no default export)
 export const register = async (req, res) => {
   try {
     const { name, email, password, role, phone } = req.body;
@@ -122,9 +122,6 @@ export const getMe = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    // If using refresh tokens in database, you can invalidate them here
-    // await User.findByIdAndUpdate(req.user.id, { refreshToken: null });
-    
     res.status(200).json({
       success: true,
       message: 'Logged out successfully'
